@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal File Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Auth Pages -->
+    <div id="authContainer" class="auth-container">
+      <!-- Login Page -->
+      <div id="loginPage" class="auth-page active">
+        <div class="auth-card">
+          <h1>📁 File Manager</h1>
+          <p class="subtitle">Secure Personal Storage</p>
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="loginUsername">Username</label>
+              <input type="text" id="loginUsername" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+          </form>
+          <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuthPage()">Register</a></p>
+        </div>
+      </div>
+
+      <!-- Register Page -->
+      <div id="registerPage" class="auth-page">
+        <div class="auth-card">
+          <h1>Create Account</h1>
+          <p class="subtitle">Join File Manager</p>
+          <form id="registerForm">
+            <div class="form-group">
+              <label for="registerUsername">Username</label>
+              <input type="text" id="registerUsername" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" id="registerPassword" placeholder="Create a password" required>
+            </div>
+            <div class="form-group">
+              <label for="registerConfirmPassword">Confirm Password</label>
+              <input type="password" id="registerConfirmPassword" placeholder="Confirm your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+          </form>
+          <p class="auth-toggle">Already have an account? <a href="#" onclick="toggleAuthPage()">Login</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardContainer" class="dashboard-container" style="display: none;">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <h1>📁 File Manager</h1>
+        </div>
+        <div class="header-right">
+          <button id="darkModeToggle" class="btn btn-icon" title="Toggle Dark Mode">🌙</button>
+          <div class="user-menu">
+            <span id="currentUser"></span>
+            <button id="changePasswordBtn" class="btn btn-secondary" title="Change Password">🔐</button>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-section">
+            <h3>Navigation</h3>
+            <button class="sidebar-btn active" onclick="navigateToRoot()">📂 All Files</button>
+            <button class="sidebar-btn" onclick="showCreateFolderModal()">➕ New Folder</button>
+          </div>
+          <div class="sidebar-section">
+            <h3>Storage</h3>
+            <div class="storage-info">
+              <p id="storageUsed">Used: 0 MB</p>
+              <div class="storage-bar">
+                <div id="storageProgress" class="storage-progress"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="content-area">
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="search-box">
+              <input type="text" id="searchInput" placeholder="Search files..." onkeyup="searchFiles()">
+              <button class="btn btn-icon" onclick="searchFiles()">🔍</button>
+            </div>
+            <div class="view-options">
+              <button class="btn btn-icon active" onclick="setViewMode('grid')" title="Grid View">⊞</button>
+              <button class="btn btn-icon" onclick="setViewMode('list')" title="List View">☰</button>
+            </div>
+          </div>
+
+          <!-- Breadcrumb -->
+          <div class="breadcrumb" id="breadcrumb">
+            <span class="breadcrumb-item active" onclick="navigateToRoot()">Home</span>
+          </div>
+
+          <!-- Upload Area -->
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-content">
+              <p>📤 Drag and drop files here or click to upload</p>
+              <input type="file" id="fileInput" multiple style="display: none;">
+              <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Choose Files</button>
+            </div>
+          </div>
+
+          <!-- Files Grid/List -->
+          <div id="filesContainer" class="files-grid"></div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="empty-state" style="display: none;">
+            <p>📭 No files yet. Upload your first file!</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Rename Modal -->
+  <div id="renameModal" class="modal">
+    <div class="modal-content">
+      <h2>Rename File</h2>
+      <input type="text" id="renameInput" placeholder="New filename">
+      <div class="modal-buttons">
+        <button class="btn btn-primary" onclick="confirmRename()">Rename</button>
+        <button class="btn btn-secondary" onclick="closeModal('renameModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Folder Modal -->
+  <div id="createFolderModal" class="modal">
+    <div class="modal-content">
+      <h2>Create New Folder</h2>
+      <input type="text" id="folderNameInput" placeholder="Folder name">
+      <div class="modal-buttons">
+        <button class="btn btn-primary" onclick="confirmCreateFolder()">Create</button>
+        <button class="btn btn-secondary" onclick="closeModal('createFolderModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+      <h2>🔐 Change Password</h2>
+      <input type="password" id="currentPasswordInput" placeholder="Current password">
+      <input type="password" id="newPasswordInput" placeholder="New password (min 6 characters)">
+      <input type="password" id="confirmNewPasswordInput" placeholder="Confirm new password">
+      <div class="modal-buttons">
+        <button class="btn btn-primary" onclick="confirmChangePassword()">Change Password</button>
+        <button class="btn btn-secondary" onclick="closeModal('changePasswordModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Preview Modal -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content preview-modal">
+      <button class="modal-close" onclick="closeModal('previewModal')">&times;</button>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
