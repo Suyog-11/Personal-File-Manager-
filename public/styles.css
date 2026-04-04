@@ -563,13 +563,31 @@ body.dark-mode .toast { background: rgba(30,30,30,0.9); }
   .main-content { flex-direction: column; overflow: auto; }
   .sidebar { width: 100%; border-right: none; flex-direction: row; gap: 12px; padding: 16px; overflow-x: auto; align-items: center; justify-content: flex-start; }
   .sidebar-section { margin: 0; min-width: max-content; }
-  .files-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); padding: 16px;}
+  .files-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); padding: 16px;}
   .toolbar { flex-direction: column; padding: 16px; gap: 16px; }
   .search-box { max-width: 100%; width: 100%; }
+}
+
+@media (max-width: 500px) {
+  .auth-card { padding: 32px 24px; }
+  .modal-content { padding: 24px; }
   
-  .landing-nav { flex-direction: column; gap: 16px; border-radius: var(--radius-md); }
-  .hero-title { font-size: 40px; }
-  .hero-subtitle { font-size: 16px; }
+  .header-right { flex-direction: column; align-items: stretch; gap: 12px; }
+  .user-menu { flex-direction: column; width: 100%; gap: 12px; }
+  .user-menu button { width: 100%; justify-content: center; }
+  #darkModeToggle { align-self: center; }
+  
+  .sidebar { flex-direction: column; text-align: center; align-items: stretch; }
+  .sidebar-section { min-width: 100%; }
+  .storage-info { justify-content: flex-start; }
+  
+  .files-grid { grid-template-columns: 1fr; }
+  .file-card, .folder-card { flex-direction: row; align-items: center; justify-content: flex-start; padding: 16px; gap: 16px; text-align: left; }
+  .file-icon { margin-bottom: 0px !important; font-size: 32px; }
+  .file-info { margin-bottom: 0px !important; flex: 1; }
+  .file-actions { opacity: 1; transform: none; position: static; gap: 8px; }
+  
+  .upload-content p { font-size: 15px; }
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
