@@ -8,7 +8,7 @@ let renameFileId = null;
 let currentFiles = [];
 let currentFolders = [];
 let isSearching = false;
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = '/api';
 
 // ==================== INITIALIZATION ====================
 
