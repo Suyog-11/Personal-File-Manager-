@@ -144,6 +144,30 @@ app.get('/api/auth/me', isAuthenticated, (req, res) => {
   });
 });
 
+// Change password
+app.post('/api/auth/change-password', isAuthenticated, (req, res) => {
+  const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ error: 'New passwords do not match' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  auth.changePassword(req.session.userId, currentPassword, newPassword, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.json({ message: 'Password changed successfully' });
+  });
+});
+
 // ==================== FILE ROUTES ====================
 
 // Upload file

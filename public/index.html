@@ -97,7 +97,7 @@
           <!-- Toolbar -->
           <div class="toolbar">
             <div class="search-box">
-              <input type="text" id="searchInput" placeholder="Search files..." onkeyup="searchFiles()">
+              <input type="text" id="searchInput" placeholder="Search files...">
               <button class="btn btn-icon" onclick="searchFiles()">🔍</button>
             </div>
             <div class="view-options">
@@ -116,7 +116,7 @@
             <div class="upload-content">
               <p>📤 Drag and drop files here or click to upload</p>
               <input type="file" id="fileInput" multiple style="display: none;">
-              <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Choose Files</button>
+              <button class="btn btn-primary">Choose Files</button>
             </div>
           </div>
 
@@ -125,7 +125,11 @@
 
           <!-- Empty State -->
           <div id="emptyState" class="empty-state" style="display: none;">
-            <p>📭 No files yet. Upload your first file!</p>
+            <div class="empty-state-content">
+              <div class="empty-icon">📁</div>
+              <h3>It's empty here</h3>
+              <p>Upload your first file or create a folder to get started!</p>
+            </div>
           </div>
         </section>
       </main>

@@ -5,6 +5,9 @@ let currentFolderId = null;
 let currentFolderPath = [];
 let viewMode = 'grid';
 let renameFileId = null;
+let currentFiles = [];
+let currentFolders = [];
+let isSearching = false;
 const API_BASE = 'http://localhost:3000/api';
 
 // ==================== INITIALIZATION ====================
@@ -26,13 +29,39 @@ function setupEventListeners() {
   uploadArea.addEventListener('dragover', handleDragOver);
   uploadArea.addEventListener('dragleave', handleDragLeave);
   uploadArea.addEventListener('drop', handleDrop);
-  uploadArea.addEventListener('click', () => document.getElementById('fileInput').click());
+  uploadArea.addEventListener('click', (e) => {
+    if (e.target.id !== 'fileInput') {
+      document.getElementById('fileInput').click();
+    }
+  });
 
-  // Logout
+  // Logout & Change Password
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+  
+  const changePasswordBtn = document.getElementById('changePasswordBtn');
+  if (changePasswordBtn) {
+    changePasswordBtn.addEventListener('click', showChangePasswordModal);
+  }
 
   // Dark mode
   document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+
+  // Debounced search
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    let timeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => searchFiles(), 300);
+    });
+  }
+
+  // Smart modal dismissal
+  window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+      e.target.classList.remove('active');
+    }
+  });
 
   // Rename modal
   document.getElementById('renameInput').addEventListener('keypress', (e) => {
@@ -73,6 +102,11 @@ async function handleLogin(e) {
   const username = document.getElementById('loginUsername').value;
   const password = document.getElementById('loginPassword').value;
 
+  const btn = e.target.querySelector('button');
+  const orgText = btn.innerText;
+  btn.innerText = 'Authenticating...';
+  btn.disabled = true;
+
   try {
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
@@ -94,6 +128,9 @@ async function handleLogin(e) {
     }
   } catch (error) {
     showToast('Login error: ' + error.message, 'error');
+  } finally {
+    btn.innerText = orgText;
+    btn.disabled = false;
   }
 }
 
@@ -102,6 +139,11 @@ async function handleRegister(e) {
   const username = document.getElementById('registerUsername').value;
   const password = document.getElementById('registerPassword').value;
   const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
+  const btn = e.target.querySelector('button');
+  const orgText = btn.innerText;
+  btn.innerText = 'Creating...';
+  btn.disabled = true;
 
   try {
     const response = await fetch(`${API_BASE}/auth/register`, {
@@ -124,6 +166,9 @@ async function handleRegister(e) {
     }
   } catch (error) {
     showToast('Registration error: ' + error.message, 'error');
+  } finally {
+    btn.innerText = orgText;
+    btn.disabled = false;
   }
 }
 
@@ -143,6 +188,55 @@ async function handleLogout() {
     showToast('Logout error: ' + error.message, 'error');
   }
 }
+
+function showChangePasswordModal() {
+  document.getElementById('currentPasswordInput').value = '';
+  document.getElementById('newPasswordInput').value = '';
+  document.getElementById('confirmNewPasswordInput').value = '';
+  openModal('changePasswordModal');
+}
+
+async function confirmChangePassword() {
+  const currentPassword = document.getElementById('currentPasswordInput').value;
+  const newPassword = document.getElementById('newPasswordInput').value;
+  const confirmNewPassword = document.getElementById('confirmNewPasswordInput').value;
+
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    showToast('All fields are required', 'warning');
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    showToast('New passwords do not match', 'warning');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showToast('New password must be at least 6 characters', 'warning');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword }),
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast('Password changed successfully!', 'success');
+      closeModal('changePasswordModal');
+    } else {
+      showToast(data.error || 'Password change failed', 'error');
+    }
+  } catch (error) {
+    showToast('Password change error: ' + error.message, 'error');
+  }
+}
+
 
 // ==================== UI NAVIGATION ====================
 
@@ -176,10 +270,10 @@ async function loadFiles(folderId = null) {
       : `${API_BASE}/files`;
 
     const response = await fetch(url, { credentials: 'include' });
-    const files = await response.json();
+    currentFiles = await response.json();
 
-    displayFiles(files);
-    updateStorageInfo(files);
+    renderDirectory();
+    updateStorageInfo(currentFiles);
   } catch (error) {
     showToast('Failed to load files: ' + error.message, 'error');
   }
@@ -192,40 +286,47 @@ async function loadFolders(parentFolderId = null) {
       : `${API_BASE}/folders`;
 
     const response = await fetch(url, { credentials: 'include' });
-    const folders = await response.json();
+    currentFolders = await response.json();
 
-    displayFolders(folders);
+    renderDirectory();
   } catch (error) {
     console.error('Failed to load folders:', error);
   }
 }
 
-function displayFiles(files) {
+function renderDirectory() {
   const container = document.getElementById('filesContainer');
   const emptyState = document.getElementById('emptyState');
 
-  if (files.length === 0) {
+  if (currentFiles.length === 0 && currentFolders.length === 0) {
     container.innerHTML = '';
     emptyState.style.display = 'flex';
+    if(isSearching) {
+        emptyState.innerHTML = `
+          <div class="empty-state-content">
+            <div class="empty-icon">🔍</div>
+            <h3>No results found</h3>
+            <p>Try adjusting your search query.</p>
+          </div>
+        `;
+    } else {
+        emptyState.innerHTML = `
+          <div class="empty-state-content">
+            <div class="empty-icon">📁</div>
+            <h3>It's empty here</h3>
+            <p>Upload your first file or create a folder to get started!</p>
+          </div>
+        `;
+    }
     return;
   }
 
   emptyState.style.display = 'none';
-  container.innerHTML = files
-    .map((file) => createFileCard(file))
-    .join('');
-}
+  
+  const folderHTML = currentFolders.map((folder) => createFolderCard(folder)).join('');
+  const fileHTML = currentFiles.map((file) => createFileCard(file)).join('');
 
-function displayFolders(folders) {
-  const container = document.getElementById('filesContainer');
-
-  if (folders.length === 0) return;
-
-  const folderHTML = folders
-    .map((folder) => createFolderCard(folder))
-    .join('');
-
-  container.innerHTML = folderHTML + container.innerHTML;
+  container.innerHTML = folderHTML + fileHTML;
 }
 
 function createFileCard(file) {
@@ -295,7 +396,7 @@ function formatFileSize(bytes) {
 
 function updateStorageInfo(files) {
   const totalSize = files.reduce((sum, file) => sum + file.file_size, 0);
-  const maxSize = 5 * 1024 * 1024 * 1024; // 5GB
+  const maxSize = 50 * 1024 * 1024 * 1024; // 50GB
   const percentage = (totalSize / maxSize) * 100;
 
   document.getElementById('storageUsed').textContent = `Used: ${formatFileSize(totalSize)}`;
@@ -332,6 +433,13 @@ function handleFileSelect(e) {
 }
 
 async function uploadFiles(files) {
+  const uploadArea = document.getElementById('uploadArea');
+  const uploadContent = document.querySelector('.upload-content p');
+  const originalText = uploadContent.innerText;
+  
+  uploadContent.innerText = '⏳ Uploading files...';
+  uploadArea.style.opacity = '0.7';
+
   for (let file of files) {
     const formData = new FormData();
     formData.append('file', file);
@@ -358,6 +466,9 @@ async function uploadFiles(files) {
       showToast('Upload error: ' + error.message, 'error');
     }
   }
+  
+  uploadContent.innerText = originalText;
+  uploadArea.style.opacity = '1';
 }
 
 // ==================== FILE OPERATIONS ====================
@@ -461,17 +572,21 @@ async function searchFiles() {
   const searchTerm = document.getElementById('searchInput').value.trim();
 
   if (!searchTerm) {
+    isSearching = false;
     loadFiles(currentFolderId);
+    loadFolders(currentFolderId);
     return;
   }
 
   try {
+    isSearching = true;
     const response = await fetch(`${API_BASE}/files/search/${encodeURIComponent(searchTerm)}`, {
       credentials: 'include',
     });
 
-    const files = await response.json();
-    displayFiles(files);
+    currentFiles = await response.json();
+    currentFolders = [];
+    renderDirectory();
   } catch (error) {
     showToast('Search failed: ' + error.message, 'error');
   }
