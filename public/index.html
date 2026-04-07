@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal File Manager</title>
+  <title>SafeFiles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
       <!-- Login Page -->
       <div id="loginPage" class="auth-page active">
         <div class="auth-card">
-          <h1>📁 File Manager</h1>
+          <h1>📁 SafeFiles</h1>
           <p class="subtitle">Secure Personal Storage</p>
           <form id="loginForm">
             <div class="form-group">
@@ -34,7 +35,7 @@
       <div id="registerPage" class="auth-page">
         <div class="auth-card">
           <h1>Create Account</h1>
-          <p class="subtitle">Join File Manager</p>
+          <p class="subtitle">Join SafeFiles</p>
           <form id="registerForm">
             <div class="form-group">
               <label for="registerUsername">Username</label>
@@ -60,11 +61,12 @@
       <!-- Header -->
       <header class="header">
         <div class="header-left">
-          <h1>📁 File Manager</h1>
+          <h1>📁 SafeFiles</h1>
         </div>
         <div class="header-right">
           <button id="darkModeToggle" class="btn btn-icon" title="Toggle Dark Mode">🌙</button>
           <div class="user-menu">
+            <button id="adminNavBtn" class="btn btn-secondary" style="display: none;" onclick="showAdminDashboard()">Admin</button>
             <span id="currentUser"></span>
             <button id="changePasswordBtn" class="btn btn-secondary" title="Change Password">🔐</button>
             <button id="logoutBtn" class="btn btn-secondary">Logout</button>
@@ -130,6 +132,41 @@
               <h3>It's empty here</h3>
               <p>Upload your first file or create a folder to get started!</p>
             </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboardContainer" class="dashboard-container" style="display: none;">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <h1>⚙️ Admin Dashboard</h1>
+        </div>
+        <div class="header-right">
+          <button class="btn btn-secondary" onclick="showDashboard()">Back to Files</button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <section class="content-area" style="padding: 2rem; overflow-y: auto;">
+          <h2>User Management</h2>
+          <div class="table-responsive" style="margin-top: 2rem; background: var(--bg-secondary); border-radius: 8px; padding: 1rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                  <th style="padding: 1rem;">ID</th>
+                  <th style="padding: 1rem;">Username</th>
+                  <th style="padding: 1rem;">Role</th>
+                  <th style="padding: 1rem;">Status</th>
+                  <th style="padding: 1rem;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminUserTableBody">
+              </tbody>
+            </table>
           </div>
         </section>
       </main>

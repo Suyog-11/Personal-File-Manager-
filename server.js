@@ -74,6 +74,22 @@ const isAuthenticated = (req, res, next) => {
   }
 };
 
+// Middleware to check admin role
+const isAdmin = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  auth.getUserById(req.session.userId, (err, user) => {
+    if (err || !user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden. Admin access required.' });
+    }
+    next();
+  });
+};
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -97,13 +113,17 @@ app.post('/api/auth/register', (req, res) => {
 
   auth.registerUser(username, password, (err, user) => {
     if (err) {
-      if (err.message.includes('UNIQUE constraint failed')) {
+      if (err.message && err.message.includes('UNIQUE constraint failed')) {
         return res.status(400).json({ error: 'Username already exists' });
       }
       return res.status(500).json({ error: 'Registration failed' });
     }
-    req.session.userId = user.id;
-    res.json({ message: 'Registration successful', user });
+    if (user.status === 'pending') {
+      res.json({ message: 'Registration successful! Please wait for an admin to approve your account.', status: 'pending' });
+    } else {
+      req.session.userId = user.id;
+      res.json({ message: 'Registration successful', user });
+    }
   });
 });
 
@@ -120,7 +140,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: err.message });
     }
     req.session.userId = user.id;
-    res.json({ message: 'Login successful', user: { id: user.id, username: user.username } });
+    res.json({ message: 'Login successful', user: { id: user.id, username: user.username, role: user.role, status: user.status } });
   });
 });
 
@@ -301,6 +321,35 @@ app.use((err, req, res, next) => {
     }
   }
   res.status(500).json({ error: 'Internal server error' });
+});
+
+// ==================== ADMIN ROUTES ====================
+
+// Get all users
+app.get('/api/admin/users', isAdmin, (req, res) => {
+  const db = require('./database');
+  db.all('SELECT id, username, role, status, created_at FROM users ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+    res.json(rows);
+  });
+});
+
+// Update user status
+app.put('/api/admin/users/:id/status', isAdmin, (req, res) => {
+  const { status } = req.body;
+  if (!['approved', 'pending', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  const db = require('./database');
+  db.run('UPDATE users SET status = ? WHERE id = ?', [status, req.params.id], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to update user status' });
+    }
+    res.json({ message: `User status updated to ${status}` });
+  });
 });
 
 // Start server

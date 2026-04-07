@@ -156,11 +156,17 @@ async function handleRegister(e) {
     const data = await response.json();
 
     if (response.ok) {
-      currentUser = data.user;
-      showDashboard();
-      loadFiles();
-      loadFolders();
-      showToast('Registration successful!', 'success');
+      if (data.status === 'pending') {
+        showToast(data.message, 'success');
+        document.getElementById('registerForm').reset();
+        toggleAuthPage(); // Switch back to login page
+      } else {
+        currentUser = data.user;
+        showDashboard();
+        loadFiles();
+        loadFolders();
+        showToast('Registration successful!', 'success');
+      }
     } else {
       showToast(data.error || 'Registration failed', 'error');
     }
@@ -249,8 +255,77 @@ function showAuthPage() {
 
 function showDashboard() {
   document.getElementById('authContainer').style.display = 'none';
+  document.getElementById('adminDashboardContainer').style.display = 'none';
   document.getElementById('dashboardContainer').style.display = 'flex';
   document.getElementById('currentUser').textContent = `👤 ${currentUser.username}`;
+  
+  if (currentUser && currentUser.role === 'admin') {
+    document.getElementById('adminNavBtn').style.display = 'inline-block';
+  } else {
+    document.getElementById('adminNavBtn').style.display = 'none';
+  }
+}
+
+async function showAdminDashboard() {
+  document.getElementById('dashboardContainer').style.display = 'none';
+  document.getElementById('adminDashboardContainer').style.display = 'flex';
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/users`, {
+      credentials: 'include'
+    });
+    const users = await response.json();
+    
+    if (response.ok) {
+      const tbody = document.getElementById('adminUserTableBody');
+      tbody.innerHTML = users.map(user => `
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 1rem;">${user.id}</td>
+          <td style="padding: 1rem;">${user.username}</td>
+          <td style="padding: 1rem; text-transform: capitalize;">${user.role}</td>
+          <td style="padding: 1rem;">
+            <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.85em; 
+              background: ${user.status === 'approved' ? 'rgba(46, 204, 113, 0.2)' : user.status === 'pending' ? 'rgba(241, 196, 15, 0.2)' : 'rgba(231, 76, 60, 0.2)'};
+              color: ${user.status === 'approved' ? '#2ecc71' : user.status === 'pending' ? '#f1c40f' : '#e74c3c'};">
+              ${user.status.toUpperCase()}
+            </span>
+          </td>
+          <td style="padding: 1rem;">
+            ${user.id !== currentUser.id ? `
+              <button class="btn btn-icon" style="color: #2ecc71;" onclick="updateUserStatus(${user.id}, 'approved')" title="Approve">✅</button>
+              <button class="btn btn-icon" style="color: #f1c40f;" onclick="updateUserStatus(${user.id}, 'pending')" title="Mark Pending">⏳</button>
+              <button class="btn btn-icon" style="color: #e74c3c;" onclick="updateUserStatus(${user.id}, 'rejected')" title="Reject">❌</button>
+            ` : '<span style="opacity: 0.5; font-size: 0.8em;">(You)</span>'}
+          </td>
+        </tr>
+      `).join('');
+    } else {
+      showToast(users.error || 'Failed to load users', 'error');
+    }
+  } catch (error) {
+    showToast('Error loading users: ' + error.message, 'error');
+  }
+}
+
+async function updateUserStatus(userId, newStatus) {
+  try {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      showToast(`User marked as ${newStatus}`, 'success');
+      showAdminDashboard(); // refresh table
+    } else {
+      const data = await response.json();
+      showToast(data.error || 'Update failed', 'error');
+    }
+  } catch (err) {
+    showToast('Status update error', 'error');
+  }
 }
 
 function toggleAuthPage() {

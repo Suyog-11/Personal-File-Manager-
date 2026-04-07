@@ -1,7 +1,7 @@
 {
-  "name": "personal-file-manager",
+  "name": "safefiles",
   "version": "1.0.0",
-  "description": "A secure personal file manager web application",
+  "description": "SafeFiles secure web application",
   "main": "server.js",
   "engines": {
     "node": ">=20.0.0"

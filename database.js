@@ -13,9 +13,31 @@ const initializeDatabase = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
+        role TEXT DEFAULT 'user',
+        status TEXT DEFAULT 'pending',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add role and status columns if they don't exist (for backward compatibility)
+    db.all("PRAGMA table_info(users)", (err, columns) => {
+      if (err) return console.error(err);
+      
+      const hasRole = columns.some(col => col.name === 'role');
+      const hasStatus = columns.some(col => col.name === 'status');
+      
+      if (!hasRole) {
+        db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'", (err) => {
+          if (!err) console.log("Added role column to users table");
+        });
+      }
+      
+      if (!hasStatus) {
+        db.run("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'approved'", (err) => {
+          if (!err) console.log("Added status column to users table");
+        });
+      }
+    });
 
     // Files table
     db.run(`
