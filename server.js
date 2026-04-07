@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Session configuration
 app.use(
   session({
+    store: new SQLiteStore({ db: 'sessions.db', dir: __dirname }),
     secret: process.env.SESSION_SECRET || 'your_secret_key',
     resave: false,
     saveUninitialized: false,
