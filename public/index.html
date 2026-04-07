@@ -66,10 +66,10 @@
         <div class="header-right">
           <button id="darkModeToggle" class="btn btn-icon" title="Toggle Dark Mode">🌙</button>
           <div class="user-menu">
-            <button id="adminNavBtn" class="btn btn-secondary" style="display: none;" onclick="showAdminDashboard()">Admin</button>
-            <span id="currentUser"></span>
-            <button id="changePasswordBtn" class="btn btn-secondary" title="Change Password">🔐</button>
-            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            <button id="adminNavBtn" class="btn btn-secondary" style="display: none;" onclick="showAdminDashboard()">⚙️ <span class="hide-mobile">Admin</span></button>
+            <span id="currentUser" class="hide-mobile"></span>
+            <button id="changePasswordBtn" class="btn btn-secondary" title="Change Password">🔐 <span class="hide-mobile">Password</span></button>
+            <button id="logoutBtn" class="btn btn-secondary">🚪 <span class="hide-mobile">Logout</span></button>
           </div>
         </div>
       </header>
@@ -79,11 +79,18 @@
         <!-- Sidebar -->
         <aside class="sidebar">
           <div class="sidebar-section">
-            <h3>Navigation</h3>
-            <button class="sidebar-btn active" onclick="navigateToRoot()">📂 All Files</button>
-            <button class="sidebar-btn" onclick="showCreateFolderModal()">➕ New Folder</button>
+            <h3 class="hide-mobile">Navigation</h3>
+            <button class="sidebar-btn active" onclick="navigateToRoot()">
+              <span class="sidebar-icon">📂</span><span class="sidebar-label">All Files</span>
+            </button>
+            <button class="sidebar-btn" onclick="showCreateFolderModal()">
+              <span class="sidebar-icon">➕</span><span class="sidebar-label">New Folder</span>
+            </button>
+            <button class="sidebar-btn mobile-only" onclick="document.getElementById('fileInput').click()">
+              <span class="sidebar-icon">📤</span><span class="sidebar-label">Upload</span>
+            </button>
           </div>
-          <div class="sidebar-section">
+          <div class="sidebar-section hide-mobile">
             <h3>Storage</h3>
             <div class="storage-info">
               <p id="storageUsed">Used: 0 MB</p>
@@ -152,21 +159,14 @@
       <!-- Main Content -->
       <main class="main-content">
         <section class="content-area" style="padding: 2rem; overflow-y: auto;">
-          <h2>User Management</h2>
-          <div class="table-responsive" style="margin-top: 2rem; background: var(--bg-secondary); border-radius: 8px; padding: 1rem;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                  <th style="padding: 1rem;">ID</th>
-                  <th style="padding: 1rem;">Username</th>
-                  <th style="padding: 1rem;">Role</th>
-                  <th style="padding: 1rem;">Status</th>
-                  <th style="padding: 1rem;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="adminUserTableBody">
-              </tbody>
-            </table>
+          <div class="toolbar" style="border-bottom: none; padding: 0 0 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border);">
+            <div class="search-box">
+              <input type="text" id="adminSearchInput" placeholder="Search users by name, id or role...">
+              <button class="btn btn-icon">🔍</button>
+            </div>
+          </div>
+          <div id="adminUsersContainer" class="admin-users-grid">
+            <!-- User cards injected by JS -->
           </div>
         </section>
       </main>

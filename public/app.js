@@ -266,6 +266,8 @@ function showDashboard() {
   }
 }
 
+let allAdminUsers = [];
+
 async function showAdminDashboard() {
   document.getElementById('dashboardContainer').style.display = 'none';
   document.getElementById('adminDashboardContainer').style.display = 'flex';
@@ -277,34 +279,70 @@ async function showAdminDashboard() {
     const users = await response.json();
     
     if (response.ok) {
-      const tbody = document.getElementById('adminUserTableBody');
-      tbody.innerHTML = users.map(user => `
-        <tr style="border-bottom: 1px solid var(--border-color);">
-          <td style="padding: 1rem;">${user.id}</td>
-          <td style="padding: 1rem;">${user.username}</td>
-          <td style="padding: 1rem; text-transform: capitalize;">${user.role}</td>
-          <td style="padding: 1rem;">
-            <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.85em; 
-              background: ${user.status === 'approved' ? 'rgba(46, 204, 113, 0.2)' : user.status === 'pending' ? 'rgba(241, 196, 15, 0.2)' : 'rgba(231, 76, 60, 0.2)'};
-              color: ${user.status === 'approved' ? '#2ecc71' : user.status === 'pending' ? '#f1c40f' : '#e74c3c'};">
-              ${user.status.toUpperCase()}
-            </span>
-          </td>
-          <td style="padding: 1rem;">
-            ${user.id !== currentUser.id ? `
-              <button class="btn btn-icon" style="color: #2ecc71;" onclick="updateUserStatus(${user.id}, 'approved')" title="Approve">✅</button>
-              <button class="btn btn-icon" style="color: #f1c40f;" onclick="updateUserStatus(${user.id}, 'pending')" title="Mark Pending">⏳</button>
-              <button class="btn btn-icon" style="color: #e74c3c;" onclick="updateUserStatus(${user.id}, 'rejected')" title="Reject">❌</button>
-            ` : '<span style="opacity: 0.5; font-size: 0.8em;">(You)</span>'}
-          </td>
-        </tr>
-      `).join('');
+      allAdminUsers = users;
+      renderAdminUsers(users);
+      
+      const searchInput = document.getElementById('adminSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase();
+          const filtered = allAdminUsers.filter(u => 
+            u.username.toLowerCase().includes(query) || 
+            u.id.toString().includes(query) || 
+            u.role.toLowerCase().includes(query)
+          );
+          renderAdminUsers(filtered);
+        });
+      }
     } else {
       showToast(users.error || 'Failed to load users', 'error');
     }
   } catch (error) {
     showToast('Error loading users: ' + error.message, 'error');
   }
+}
+
+function renderAdminUsers(usersList) {
+  const container = document.getElementById('adminUsersContainer');
+  
+  if (usersList.length === 0) {
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 40px;">No users found</div>';
+    return;
+  }
+  
+  container.innerHTML = usersList.map(user => {
+    const isMe = user.id === currentUser.id;
+    let statusClass = 'status-pending';
+    let statusIcon = '⏳';
+    if (user.status === 'approved') { statusClass = 'status-approved'; statusIcon = '✅';}
+    if (user.status === 'rejected') { statusClass = 'status-rejected'; statusIcon = '❌';}
+    
+    return `
+      <div class="admin-user-card">
+        <div class="admin-user-header">
+          <div class="admin-username" title="${user.username}">
+            👤 ${user.username}
+          </div>
+          <div class="status-badge ${statusClass}">
+            ${user.status}
+          </div>
+        </div>
+        
+        <div class="admin-user-details">
+          <div><strong>ID:</strong> #${user.id}</div>
+          <div><strong>Role:</strong> <span style="text-transform: capitalize;">${user.role}</span></div>
+          <div><strong>Registered:</strong> ${new Date(user.created_at).toLocaleDateString()}</div>
+        </div>
+        
+        <div class="admin-user-actions">
+          ${!isMe ? `
+            <button class="btn btn-secondary" style="border-color: rgba(46, 204, 113, 0.5); color: #2ecc71;" onclick="updateUserStatus(${user.id}, 'approved')" title="Approve">✅ Approve</button>
+            <button class="btn btn-secondary" style="border-color: rgba(231, 76, 60, 0.5); color: #e74c3c;" onclick="updateUserStatus(${user.id}, 'rejected')" title="Reject">❌ Reject</button>
+          ` : '<span style="color: var(--text-secondary); font-size: 14px; text-align: center; width: 100%; padding: 8px;">(Current Session)</span>'}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function updateUserStatus(userId, newStatus) {
